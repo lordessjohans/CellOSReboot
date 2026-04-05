@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "HistoryEntry": {
+      "title": "History Entry",
+      "description": "Record of a device operation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "operation": { "type": "string" },
+        "details": { "type": "string" },
+        "status": { "type": "string", "enum": ["SUCCESS", "FAILED"] }
+      },
+      "required": ["id", "userId", "timestamp", "operation", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/users/{userId}/history/{historyId}": {
+      "schema": "HistoryEntry",
+      "description": "Device operation history for a specific user"
+    }
+  }
+}

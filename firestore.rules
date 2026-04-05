@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required) - The user's unique ID
+    //   - email: string (required) - The user's email address
+    //   - displayName: string (optional) - The user's display name
+    //   - lastLogin: timestamp (optional) - The last time the user logged in
+    //
+    // Collection: users/{userId}/history
+    // Document ID: {historyId} (Auto-generated)
+    // Fields:
+    //   - userId: string (required) - The owner's UID
+    //   - timestamp: timestamp (required) - When the operation occurred
+    //   - operation: string (required) - Type of operation (e.g., "OS Install")
+    //   - details: string (optional) - Specific details about the operation
+    //   - status: string (required) - "SUCCESS" or "FAILED"
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidHistoryEntry(data) {
+      return data.keys().hasAll(['userId', 'timestamp', 'operation', 'status']) &&
+             data.userId == request.auth.uid &&
+             data.timestamp is timestamp &&
+             data.operation is string &&
+             data.operation.size() > 0 &&
+             data.operation.size() < 100 &&
+             data.status in ['SUCCESS', 'FAILED'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) && (request.method == 'delete' || isValidUser(request.resource.data));
+
+      match /history/{historyId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidHistoryEntry(request.resource.data);
+        allow update, delete: if false; // History is immutable in this app
+      }
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

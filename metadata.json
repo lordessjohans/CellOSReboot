@@ -1,0 +1,5 @@
+{
+  "name": "Cellular OS & Network Provisioner",
+  "description": "A technical dashboard for resetting cellular devices, installing custom operating systems, and provisioning new network providers.",
+  "requestFramePermissions": []
+}
